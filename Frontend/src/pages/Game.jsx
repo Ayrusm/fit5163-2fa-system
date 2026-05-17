@@ -1,13 +1,24 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
 
-function Game() {
+const Game = () => {
   return (
-    <div style={{ textAlign: 'center', marginTop: '100px' }}>
-      <h1>Chess Game</h1>
-      <p>You are logged in.</p>
-      <p>The chess game will go here.</p>
+    <div style={{ textAlign: 'center', marginTop: '50px' }}>
+      {/* This screen shows after successful login and 2FA authentication */}
+      <h1>Welcome! You are logged in.</h1>
 
-      <Link to="/login">Logout</Link>
+      <p>Chess game will go here.</p>
+
+      {/* 
+        YOUR TASK — LAVISHA
+        Replace the paragraph above with the chess game component
+        once you have found and installed it.
+      */}
+
+      {/* Logout link — sends user back to login page */}
+      <div style={{ marginTop: '20px' }}>
+        <Link to="/login">Logout</Link>
+      </div>
     </div>
   );
 }
