@@ -1,62 +1,57 @@
-import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import '../styles/Authenticate.css';
 
-const Authenticate = () => {
-  // Stores the 6 digit code typed by the user
+function Authenticate() {
   const [code, setCode] = useState('');
-
-  // Stores error messages to show on the page
   const [error, setError] = useState('');
+  const [secondsLeft, setSecondsLeft] = useState(15);
 
-  // Gets data passed from the Login page
   const location = useLocation();
-
-  // React Router function used to move between pages
   const navigate = useNavigate();
 
-  // Get the email that was passed from Login.jsx
   const email = location.state?.email;
 
-  // ============================================================
-  // SURYASHREE INPUT NEEDED HERE
-  // Replace 'http://localhost:5000/authenticate' with whatever URL
-  // Suryashree creates for her 2FA authentication endpoint.
-  //
-  // Ask her: "What is your 2FA authentication endpoint URL?"
-  //
-  // This endpoint should check:
-  // 1. email
-  // 2. 6 digit code
-  // ============================================================
   const BACKEND_URL = 'http://localhost:5000/authenticate';
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSecondsLeft((previousSeconds) => {
+        if (previousSeconds === 1) {
+          return 15;
+        }
+
+        return previousSeconds - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleCodeChange = (e) => {
+    const value = e.target.value.replace(/\D/g, '');
+
+    if (value.length <= 6) {
+      setCode(value);
+    }
+  };
+
   const handleVerifyCode = async () => {
-    // STEP 1 — Check code field is not empty
     if (code === '') {
-      setError('Please enter your 2FA code');
+      setError('Please enter your authentication code');
       return;
     }
 
-    // STEP 2 — Check that we still know which user is logging in
-    // This email was passed from Login.jsx using navigate state.
+    if (code.length !== 6) {
+      setError('Authentication code must be 6 digits');
+      return;
+    }
+
     if (!email) {
-      setError('No email found. Please login again.');
+      setError('No login session found. Please return to the login page.');
       return;
     }
 
-    // STEP 3 — Send email and 2FA code to Suryashree's backend
-    // ============================================================
-    // SURYASHREE INPUT NEEDED HERE
-    // Check with Suryashree what field names she expects.
-    //
-    // Right now we are sending:
-    // {
-    //   email,
-    //   code
-    // }
-    //
-    // Ask her: "Do you expect email and code, or different names?"
-    // ============================================================
     try {
       const response = await fetch(BACKEND_URL, {
         method: 'POST',
@@ -64,111 +59,89 @@ const Authenticate = () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          email, // SURYASHREE — confirm field name "email"
-          code   // SURYASHREE — confirm field name "code"
+          email,
+          code
         })
       });
 
-      // STEP 4 — Read what Suryashree's backend sends back
-      // ============================================================
-      // SURYASHREE INPUT NEEDED HERE
-      // Ask her: "What does your response look like on success and failure?"
-      //
-      // Right now we assume:
-      // Success → response.ok is true, probably HTTP status 200
-      // Failure → response.ok is false and data.message has the error text
-      // ============================================================
       const data = await response.json();
 
       if (response.ok) {
-        // Backend said YES — 2FA code matched
-
-        // Clear any old error message
         setError('');
-
-        // Go to the main application page
         navigate('/game');
       } else {
-        // Backend said NO — 2FA code did not match
-        // data.message is whatever error text Suryashree sends back
-        setError(data.message || 'Invalid 2FA code');
+        setError(data.message || 'Invalid or expired authentication code');
       }
     } catch (err) {
-      // This runs if Suryashree's server is not running
-      // or there is a network / CORS problem
-      setError('Could not connect to server. Is the backend running?');
+      setError('Unable to connect to the authentication server.');
     }
   };
 
-  // ============================================================
-  // TESTING ONLY — REMOVE BEFORE FINAL SUBMISSION
-  //
-  // This button skips 2FA authentication so you can test the chess game
-  // without needing the backend to be running.
-  // ============================================================
   const skipAuthenticationForTesting = () => {
     navigate('/game');
   };
 
   return (
-    <div style={{ textAlign: 'center', marginTop: '100px' }}>
-      <h1>Two-Factor Authentication</h1>
+    <div className="auth-page">
+      <main className="auth-panel">
+        <section className="auth-header">
+          <div className="auth-brand">
+            <div className="auth-mark">SC</div>
+            <div>
+              <h1>Secure Chess</h1>
+              <p>Identity verification</p>
+            </div>
+          </div>
+        </section>
 
-      {/* Shows which email is being authenticated */}
-      {email ? (
-        <p>Enter the 6-digit code for: {email}</p>
-      ) : (
-        <p>Please return to login first.</p>
-      )}
+        <section className="auth-content">
+          <h2>Enter verification code</h2>
 
-      {/* 6 digit 2FA code input */}
-      <input
-        type="text"
-        placeholder="6 digit code"
-        value={code}
-        onChange={(e) => setCode(e.target.value)}
-        style={{
-          display: 'block',
-          margin: '10px auto',
-          padding: '8px',
-          width: '300px'
-        }}
-      />
+          <p className="auth-description">
+            A temporary 6-digit code has been generated for this account.
+            Codes refresh every 15 seconds.
+          </p>
 
-      {/* Error message — only shows when error variable has text */}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+          <div className="account-summary">
+            <span>Account</span>
+            <strong>{email || 'No account selected'}</strong>
+          </div>
 
-      {/* Verify button — triggers handleVerifyCode */}
-      <button
-        onClick={handleVerifyCode}
-        style={{
-          padding: '10px 30px',
-          marginTop: '10px',
-          display: 'block',
-          margin: '10px auto'
-        }}
-      >
-        Verify Code
-      </button>
+          <div className="form-group">
+            <label htmlFor="code">Verification code</label>
 
-      {/* 
-        TESTING ONLY — REMOVE BEFORE FINAL SUBMISSION
-        This button skips authentication so you can test the chess game
-        without needing the backend to be running.
-      */}
-      <button
-        onClick={skipAuthenticationForTesting}
-        style={{
-          padding: '5px 15px',
-          marginTop: '10px',
-          display: 'block',
-          margin: '10px auto',
-          fontSize: '11px',
-          color: 'gray'
-        }}
-      >
-        Skip authentication, testing only
-      </button>
+            <input
+              id="code"
+              type="text"
+              inputMode="numeric"
+              placeholder="000000"
+              value={code}
+              onChange={handleCodeChange}
+              className="code-input"
+              autoComplete="one-time-code"
+            />
+          </div>
+
+          <div className="code-meta">
+            <span>Code refresh</span>
+            <strong>{secondsLeft}s remaining</strong>
+          </div>
+
+          {error && <div className="error-box">{error}</div>}
+
+          <button className="primary-action" onClick={handleVerifyCode}>
+            Verify and continue
+          </button>
+
+          <button className="testing-action" onClick={skipAuthenticationForTesting}>
+            Skip authentication for testing
+          </button>
+
+          <div className="auth-links">
+            <Link to="/login">Return to login</Link>
+          </div>
+        </section>
+      </main>
     </div>
   );
 }
