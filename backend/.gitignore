@@ -1,0 +1,5 @@
+.env
+__pycache__/
+*.pyc
+2fa_app.db
+node_modules/
