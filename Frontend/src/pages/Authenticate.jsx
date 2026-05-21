@@ -1,32 +1,44 @@
-import React, { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import '../styles/Authenticate.css';
 
 function Authenticate() {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
-  const [secondsLeft, setSecondsLeft] = useState(15);
 
   const location = useLocation();
   const navigate = useNavigate();
 
   const email = location.state?.email;
 
+  // ============================================================
+  // BACKEND INPUT NEEDED
+  // This endpoint should check:
+  // 1. email
+  // 2. temporary 2FA code
+  //
+  // The backend should generate/recalculate the expected code using:
+  // HMAC-SHA256(secret, email + current15SecondTimeWindow)
+  //
+  // Expected request:
+  // {
+  //   email,
+  //   code
+  // }
+  //
+  // Expected response on success:
+  // {
+  //   token,
+  //   user: {
+  //     id,
+  //     email,
+  //     role
+  //   }
+  // }
+  //
+  // The JWT should be issued only after this 2FA step succeeds.
+  // ============================================================
   const BACKEND_URL = 'http://localhost:5000/authenticate';
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setSecondsLeft((previousSeconds) => {
-        if (previousSeconds === 1) {
-          return 15;
-        }
-
-        return previousSeconds - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
 
   const handleCodeChange = (e) => {
     const value = e.target.value.replace(/\D/g, '');
@@ -36,7 +48,30 @@ function Authenticate() {
     }
   };
 
+  const openAuthenticator = () => {
+    const AUTHENTICATOR_LOGIN_URL = 'http://localhost:3001/login';
+
+    if (email) {
+      window.open(
+        `${AUTHENTICATOR_LOGIN_URL}?email=${encodeURIComponent(email)}`,
+        '_blank',
+        'width=480,height=700'
+      );
+    } else {
+      window.open(
+        AUTHENTICATOR_LOGIN_URL,
+        '_blank',
+        'width=480,height=700'
+      );
+    }
+  };
+
   const handleVerifyCode = async () => {
+    if (!email) {
+      setError('No login session found. Please return to login.');
+      return;
+    }
+
     if (code === '') {
       setError('Please enter your authentication code');
       return;
@@ -44,11 +79,6 @@ function Authenticate() {
 
     if (code.length !== 6) {
       setError('Authentication code must be 6 digits');
-      return;
-    }
-
-    if (!email) {
-      setError('No login session found. Please return to the login page.');
       return;
     }
 
@@ -67,6 +97,10 @@ function Authenticate() {
       const data = await response.json();
 
       if (response.ok) {
+        // Store JWT and user details after successful 2FA.
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+
         setError('');
         navigate('/game');
       } else {
@@ -77,19 +111,16 @@ function Authenticate() {
     }
   };
 
-  const skipAuthenticationForTesting = () => {
-    navigate('/game');
-  };
-
   return (
     <div className="auth-page">
       <main className="auth-panel">
         <section className="auth-header">
           <div className="auth-brand">
             <div className="auth-mark">SC</div>
+
             <div>
               <h1>Secure Chess</h1>
-              <p>Identity verification</p>
+              <p>Two-factor verification</p>
             </div>
           </div>
         </section>
@@ -98,14 +129,18 @@ function Authenticate() {
           <h2>Enter verification code</h2>
 
           <p className="auth-description">
-            A temporary 6-digit code has been generated for this account.
-            Codes refresh every 15 seconds.
+            Open the authenticator application, sign in using your authenticator
+            password or PIN, and enter the current 6-digit code shown there.
           </p>
 
           <div className="account-summary">
             <span>Account</span>
             <strong>{email || 'No account selected'}</strong>
           </div>
+
+          <button className="open-authenticator-button" onClick={openAuthenticator}>
+            Open authenticator app
+          </button>
 
           <div className="form-group">
             <label htmlFor="code">Verification code</label>
@@ -122,19 +157,14 @@ function Authenticate() {
             />
           </div>
 
-          <div className="code-meta">
-            <span>Code refresh</span>
-            <strong>{secondsLeft}s remaining</strong>
+          <div className="code-note">
+            Codes refresh every 15 seconds in the authenticator app.
           </div>
 
           {error && <div className="error-box">{error}</div>}
 
           <button className="primary-action" onClick={handleVerifyCode}>
             Verify and continue
-          </button>
-
-          <button className="testing-action" onClick={skipAuthenticationForTesting}>
-            Skip authentication for testing
           </button>
 
           <div className="auth-links">
