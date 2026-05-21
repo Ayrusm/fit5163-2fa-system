@@ -55,7 +55,7 @@ function Login() {
           <div className="logo-box">♟</div>
           <h1>Secure Chess</h1>
           <p>
-            A two-factor authentication system for protecting access to your chess game.
+            {/* A two-factor authentication system for protecting access to your chess game. */}
           </p>
         </div>
       </div>
