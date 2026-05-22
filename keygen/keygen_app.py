@@ -4,7 +4,10 @@ import os
 import hashlib
 import sqlite3
 import threading
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify
+import jwt
+import datetime
+from werkzeug.security import check_password_hash
 
 sys.path.append(os.path.dirname(__file__))
 
@@ -15,12 +18,10 @@ from db_helper import get_active_users, save_code
 # Flask app setup
 # ─────────────────────────────────────────
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
+JWT_SECRET = os.getenv("JWT_SECRET", "change_this_secret")
 
 DB_PATH = os.path.join(os.path.dirname(__file__), '..', '2fa.db')
 
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
 
 
 # ─────────────────────────────────────────
@@ -59,12 +60,13 @@ def authenticator_login():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
+    # In authenticator_login route, update this query:
     cursor.execute('''
-        SELECT u.id, u.is_active, k.id
+        SELECT u.id, u.is_active, u.keygen_password_hash, k.id
         FROM users u
         JOIN keygen_accounts k ON u.id = k.user_id
-        WHERE u.email = ? AND u.auth_app_password_hash = ?
-    ''', (email, hash_password(password)))
+        WHERE u.email = ?
+    ''', (email,))
 
     user = cursor.fetchone()
     conn.close()
@@ -72,22 +74,46 @@ def authenticator_login():
     if not user:
         return jsonify({ 'success': False, 'error': 'Invalid credentials' }), 401
 
-    user_id, is_active, keygen_account_id = user
+    user_id, is_active, stored_hash, keygen_account_id = user
 
     if not is_active:
         return jsonify({ 'success': False, 'error': 'Account suspended' }), 403
+    
+    if not stored_hash:
+        return jsonify({'success': False, 'error': 'Authenticator not set up'}), 403
 
-    session['user_id'] = user_id
-    session['keygen_account_id'] = keygen_account_id
-    return jsonify({ 'success': True })
+    if not check_password_hash(stored_hash, password):
+        return jsonify({'success': False, 'error': 'Invalid credentials'}), 401
+
+    token = jwt.encode({
+        'user_id': user_id,
+        'keygen_account_id': keygen_account_id,
+        'scope': 'authenticator',
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=2)
+        }, JWT_SECRET, algorithm='HS256')
+
+    return jsonify({ 'success': True, 'token': token })
 
 
 @app.route('/authenticator/code', methods=['GET'])
 def get_current_code():
-    if 'user_id' not in session:
-        return jsonify({ 'success': False, 'error': 'Not logged in' }), 401
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return jsonify({'success': False, 'error': 'Not logged in'}), 401
 
-    keygen_account_id = session['keygen_account_id']
+    token = auth_header.split(' ')[1]
+
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
+    except jwt.ExpiredSignatureError:
+        return jsonify({'success': False, 'error': 'Token expired'}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({'success': False, 'error': 'Invalid token'}), 401
+
+    if payload.get('scope') != 'authenticator':
+        return jsonify({'success': False, 'error': 'Invalid token scope'}), 403
+
+    keygen_account_id = payload['keygen_account_id']
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -95,25 +121,40 @@ def get_current_code():
         SELECT code_hash, valid_until
         FROM active_codes
         WHERE keygen_account_id = ? AND is_used = 0
+        AND datetime(valid_until) > datetime('now')
         ORDER BY valid_from DESC LIMIT 1
     ''', (keygen_account_id,))
     code_row = cursor.fetchone()
     conn.close()
 
     if not code_row:
-        return jsonify({ 'success': False, 'error': 'No code available yet' })
+        return jsonify({'success': False, 'error': 'No code available yet'})
+
+    # Recalculate raw code using same HMAC formula
+    from code_generator import generate_code
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT secret_key, hash_salt FROM keygen_accounts WHERE id = ?
+    ''', (keygen_account_id,))
+    account = cursor.fetchone()
+    conn.close()
+
+    raw_code = generate_code(account[0], account[1])
+    seconds_left = 15 - (int(time.time()) % 15)
 
     return jsonify({
         'success': True,
-        'valid_until': code_row[1]
+        'code': raw_code,
+        'valid_until': code_row[1],
+        'seconds_left': seconds_left
     })
 
 
 @app.route('/authenticator/logout', methods=['POST'])
 def authenticator_logout():
-    session.clear()
-    return jsonify({ 'success': True })
-
+    # JWT is stateless — frontend just deletes the token
+    return jsonify({'success': True})
 
 @app.route('/keygen/status', methods=['GET'])
 def status():
