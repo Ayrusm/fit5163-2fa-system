@@ -10,9 +10,10 @@ def register():
     data = request.get_json()
     email = data.get("email", "").lower().strip()
     password = data.get("password", "")
+    keygen_password = data.get("keygen_password", "")
 
-    if not email or not password:
-        return jsonify({"message": "Email and password are required"}), 400
+    if not email or not password or not keygen_password:
+        return jsonify({"message": "Email, password, and keygen password are required"}), 400
 
     conn = get_db()
     cursor = conn.cursor()
@@ -27,14 +28,15 @@ def register():
         return jsonify({"message": "User already exists"}), 400
 
     password_hash = generate_password_hash(password)
+    keygen_password_hash = generate_password_hash(keygen_password)
     secret_key = create_secret_key()
     hash_salt = sha256_hash(email)
 
     try:
         cursor.execute("""
-            INSERT INTO users (email, password_hash, role, is_active)
-            VALUES (?, ?, 'user', 1)
-        """, (email, password_hash))
+            INSERT INTO users (email, password_hash, keygen_password_hash, role, is_active)
+            VALUES (?, ?, ?, 'user', 1)
+        """, (email, password_hash, keygen_password_hash))
 
         user_id = cursor.lastrowid
 
