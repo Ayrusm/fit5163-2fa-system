@@ -60,7 +60,7 @@ function AuthenticatorRegister() {
         setError(data.message || 'Could not create authenticator account');
       }
     } catch (err) {
-      setError('Could not connect to server. Is the backend running?');
+      setError('Could not connect to server.');
     }
   };
 

@@ -11,34 +11,8 @@ function Authenticate() {
 
   const email = location.state?.email;
 
-  // ============================================================
-  // BACKEND INPUT NEEDED
-  // This endpoint should check:
-  // 1. email
-  // 2. temporary 2FA code
-  //
-  // The backend should generate/recalculate the expected code using:
-  // HMAC-SHA256(secret, email + current15SecondTimeWindow)
-  //
-  // Expected request:
-  // {
-  //   email,
-  //   code
-  // }
-  //
-  // Expected response on success:
-  // {
-  //   token,
-  //   user: {
-  //     id,
-  //     email,
-  //     role
-  //   }
-  // }
-  //
-  // The JWT should be issued only after this 2FA step succeeds.
-  // ============================================================
-  const BACKEND_URL = 'http://localhost:5000/authenticate';
+  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+  const AUTHENTICATOR_URL = process.env.REACT_APP_AUTHENTICATOR_URL;
 
   const handleCodeChange = (e) => {
     const value = e.target.value.replace(/\D/g, '');
@@ -49,17 +23,17 @@ function Authenticate() {
   };
 
   const openAuthenticator = () => {
-    const AUTHENTICATOR_LOGIN_URL = 'http://localhost:3001/login';
+    const authenticatorLoginUrl = `${AUTHENTICATOR_URL}/login`;
 
     if (email) {
       window.open(
-        `${AUTHENTICATOR_LOGIN_URL}?email=${encodeURIComponent(email)}`,
+        `${authenticatorLoginUrl}?email=${encodeURIComponent(email)}`,
         '_blank',
         'width=480,height=700'
       );
     } else {
       window.open(
-        AUTHENTICATOR_LOGIN_URL,
+        authenticatorLoginUrl,
         '_blank',
         'width=480,height=700'
       );
@@ -83,7 +57,7 @@ function Authenticate() {
     }
 
     try {
-      const response = await fetch(BACKEND_URL, {
+      const response = await fetch(`${BACKEND_URL}/authenticate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -96,17 +70,23 @@ function Authenticate() {
 
       const data = await response.json();
 
-      if (response.ok) {
-        // Store JWT and user details after successful 2FA.
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-
-        setError('');
-        navigate('/game');
-      } else {
+      if (!response.ok) {
         setError(data.message || 'Invalid or expired authentication code');
+        return;
       }
+
+      if (!data.token || !data.user) {
+        setError('Authentication succeeded, but server response was incomplete.');
+        return;
+      }
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      setError('');
+      navigate('/game');
     } catch (err) {
+      console.error('Authentication request failed:', err);
       setError('Unable to connect to the authentication server.');
     }
   };

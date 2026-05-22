@@ -50,7 +50,7 @@ function AuthenticatorLogin() {
         setError(data.message || 'Invalid authenticator credentials');
       }
     } catch (err) {
-      setError('Could not connect to server. Is the backend running?');
+      setError('Could not connect to server.');
     }
   };
 
