@@ -21,7 +21,7 @@ from db_helper import get_active_users, save_code
 app = Flask(__name__)
 JWT_SECRET = os.getenv("JWT_SECRET", "change_this_secret")
 
-DB_PATH = os.path.join(os.path.dirname(__file__), '..', '2fa.db')
+DB_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'backend', '2fa_app.db')
 
 
 
