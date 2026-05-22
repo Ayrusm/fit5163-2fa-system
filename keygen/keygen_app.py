@@ -7,7 +7,8 @@ import threading
 from flask import Flask, request, jsonify
 import jwt
 import datetime
-from werkzeug.security import check_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
+from db import get_db
 
 sys.path.append(os.path.dirname(__file__))
 
@@ -47,7 +48,85 @@ def run_keygen_loop():
 
         time.sleep(seconds_until_next_window())
 
+@app.route("/authenticator/register", methods=["POST"])
+def authenticator_register():
+    data = request.get_json()
 
+    email = data.get("email", "").lower().strip()
+    password = data.get("password", "")
+
+    if not email or not password:
+        return jsonify({
+            "success": False,
+            "error": "Email and authenticator password are required"
+        }), 400
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    user = cursor.execute("""
+        SELECT id, is_active, keygen_password_hash
+        FROM users
+        WHERE email = ?
+    """, (email,)).fetchone()
+
+    if not user:
+        conn.close()
+        return jsonify({
+            "success": False,
+            "error": "Main app account not found. Please register in the main app first."
+        }), 404
+
+    if user["is_active"] != 1:
+        conn.close()
+        return jsonify({
+            "success": False,
+            "error": "Main app account is suspended."
+        }), 403
+
+    if user["keygen_password_hash"]:
+        conn.close()
+        return jsonify({
+            "success": False,
+            "error": "Authenticator account already exists. Please login instead."
+        }), 400
+
+    keygen_account = cursor.execute("""
+        SELECT id
+        FROM keygen_accounts
+        WHERE user_id = ?
+    """, (user["id"],)).fetchone()
+
+    if not keygen_account:
+        conn.close()
+        return jsonify({
+            "success": False,
+            "error": "Keygen account row does not exist."
+        }), 500
+
+    keygen_password_hash = generate_password_hash(password)
+
+    cursor.execute("""
+        UPDATE users
+        SET keygen_password_hash = ?, updated_at = datetime('now')
+        WHERE id = ?
+    """, (keygen_password_hash, user["id"]))
+
+    cursor.execute("""
+        UPDATE keygen_accounts
+        SET is_active = 1
+        WHERE user_id = ?
+    """, (user["id"],))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "success": True,
+        "message": "Authenticator account created successfully."
+    }), 201
+    
+    
 # ─────────────────────────────────────────
 # Authenticator routes
 # ─────────────────────────────────────────
