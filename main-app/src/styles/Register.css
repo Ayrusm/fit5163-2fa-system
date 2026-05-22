@@ -1,6 +1,6 @@
 .register-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #020617, #0f172a);
+  background: #f8fafc;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -19,15 +19,14 @@
   align-items: center;
   gap: 14px;
   margin-bottom: 24px;
-  color: #ffffff;
 }
 
 .register-mark {
   width: 46px;
   height: 46px;
   border-radius: 12px;
-  background: #ffffff;
-  color: #020617;
+  background: #fda4af;
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -38,6 +37,7 @@
 .register-brand h1 {
   margin: 0;
   font-size: 22px;
+  color: #0f172a;
 }
 
 .register-brand p {
@@ -48,15 +48,17 @@
 
 .register-card {
   background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 18px;
   padding: 34px;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
 }
 
 .register-card h2 {
   margin: 0;
-  font-size: 30px;
+  font-size: 28px;
   color: #0f172a;
+  letter-spacing: -0.03em;
 }
 
 .register-description {
@@ -73,34 +75,42 @@
 .form-group label {
   display: block;
   margin-bottom: 8px;
-  color: #334155;
-  font-size: 13px;
-  font-weight: 700;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .form-group input {
   width: 100%;
   box-sizing: border-box;
   height: 46px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
   padding: 0 14px;
   font-size: 14px;
   outline: none;
+  transition: border 0.15s;
+  color: #0f172a;
 }
 
 .form-group input:focus {
-  border-color: #0f172a;
-  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1);
+  border-color: #fda4af;
+}
+
+.form-group input::placeholder {
+  color: #cbd5e1;
 }
 
 .register-error {
-  background: #fef2f2;
+  background: #fee2e2;
   color: #991b1b;
   border: 1px solid #fecaca;
   padding: 12px 14px;
   border-radius: 10px;
   font-size: 13px;
+  font-weight: 700;
   margin-bottom: 16px;
 }
 
@@ -109,15 +119,16 @@
   height: 48px;
   border: none;
   border-radius: 10px;
-  background: #0f172a;
+  background: #fda4af;
   color: #ffffff;
   font-size: 14px;
   font-weight: 800;
   cursor: pointer;
+  transition: background 0.15s;
 }
 
 .register-button:hover {
-  background: #1e293b;
+  background: #fb7185;
 }
 
 .register-footer {
@@ -128,11 +139,11 @@
 }
 
 .register-footer a {
-  color: #0f172a;
-  font-weight: 700;
+  color: #fda4af;
+  font-weight: 800;
   text-decoration: none;
 }
 
 .register-footer a:hover {
-  text-decoration: underline;
+  color: #fb7185;
 }
