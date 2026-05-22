@@ -1,7 +1,7 @@
 import sqlite3
 import os
 
-DB_PATH = os.path.join(os.path.dirname(__file__), '..', '2fa.db')
+DB_PATH = os.path.join(os.path.dirname(__file__), '..', '2fa_app.db')
 SCHEMA_PATH = os.path.join(os.path.dirname(__file__), 'schema.sql')
 
 def setup():
