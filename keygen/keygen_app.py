@@ -7,6 +7,7 @@ import threading
 from flask import Flask, request, jsonify
 import jwt
 import datetime
+from werkzeug.security import check_password_hash
 
 sys.path.append(os.path.dirname(__file__))
 
@@ -21,8 +22,6 @@ JWT_SECRET = os.getenv("JWT_SECRET", "change_this_secret")
 
 DB_PATH = os.path.join(os.path.dirname(__file__), '..', '2fa.db')
 
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
 
 
 # ─────────────────────────────────────────
@@ -83,7 +82,7 @@ def authenticator_login():
     if not stored_hash:
         return jsonify({'success': False, 'error': 'Authenticator not set up'}), 403
 
-    if hash_password(password) != stored_hash:
+    if not check_password_hash(stored_hash, password):
         return jsonify({'success': False, 'error': 'Invalid credentials'}), 401
 
     token = jwt.encode({
