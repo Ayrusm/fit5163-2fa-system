@@ -119,7 +119,7 @@ function Login() {
           </div>
 
           <div className="form-group">
-            <label>Main app password</label>
+            <label>Password</label>
             <input
               type="password"
               placeholder="Enter your password"

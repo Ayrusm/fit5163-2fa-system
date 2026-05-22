@@ -117,7 +117,7 @@ function Register() {
           </div>
 
           <div className="form-group">
-            <label>Main app password</label>
+            <label>Password</label>
             <input
               type="password"
               placeholder="Create a password"
