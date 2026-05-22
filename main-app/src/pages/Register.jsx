@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import '../styles/Register.css';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import "../styles/Register.css";
 
 function Register() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
 
   const navigate = useNavigate();
 
@@ -29,7 +29,8 @@ function Register() {
   // After successful registration, the user is redirected to the
   // authenticator app to create a separate authenticator password/PIN.
   // ============================================================
-  const BACKEND_URL = 'http://localhost:5000/register';
+  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+  const AUTHENTICATOR_URL = process.env.REACT_APP_AUTHENTICATOR_URL;
 
   // ============================================================
   // AUTHENTICATOR APP URL
@@ -42,47 +43,41 @@ function Register() {
   // The email is passed as a query parameter so the authenticator
   // registration page can pre-fill the same email.
   // ============================================================
-  const AUTHENTICATOR_REGISTER_URL = 'http://localhost:3001/register';
 
   const handleRegister = async () => {
-    if (email === '' || password === '' || confirmPassword === '') {
-      setError('Please fill in all fields');
+    if (email === "" || password === "" || confirmPassword === "") {
+      setError("Please fill in all fields");
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       return;
     }
 
     try {
-      const response = await fetch(BACKEND_URL, {
-        method: 'POST',
+      const response = await fetch(`${BACKEND_URL}/register`, {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email,
-          password
-        })
+          password,
+        }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        setError('');
+        setError("");
 
-        // ============================================================
-        // After creating the main account, redirect the user to the
-        // authenticator app so they can create their authenticator
-        // account using a separate password/PIN.
-        // ============================================================
-        window.location.href = `${AUTHENTICATOR_REGISTER_URL}?email=${encodeURIComponent(email)}`;
+        window.location.href = `${AUTHENTICATOR_URL}/register?email=${encodeURIComponent(email)}`;
       } else {
-        setError(data.message || 'Registration failed');
+        setError(data.message || "Registration failed");
       }
     } catch (err) {
-      setError('Could not connect to server. Is the backend running?');
+      setError("Could not connect to server.");
     }
   };
 

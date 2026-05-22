@@ -1,74 +1,153 @@
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/Admin.css';
 
 function Admin() {
+  const [users, setUsers] = useState([]);
+  const [keygenAccounts, setKeygenAccounts] = useState([]);
+  const [authLogs, setAuthLogs] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
   const navigate = useNavigate();
 
-  // ============================================================
-  // TEMPORARY MOCK DATA
-  // Later, replace this with data from backend endpoints:
-  //
-  // GET /admin/users
-  // GET /admin/keygen-accounts
-  // GET /admin/auth-logs
-  // ============================================================
-  const users = [
-    {
-      id: 1,
-      email: 'student@example.com',
-      role: 'user',
-      status: 'active',
-      createdAt: '2026-05-21'
-    },
-    {
-      id: 2,
-      email: 'admin@example.com',
-      role: 'admin',
-      status: 'active',
-      createdAt: '2026-05-21'
-    }
-  ];
+  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
-  const keygenAccounts = [
-    {
-      id: 1,
-      email: 'student@example.com',
-      status: 'active',
-      setupStatus: 'completed',
-      lastGenerated: '10:42:15'
-    },
-    {
-      id: 2,
-      email: 'admin@example.com',
-      status: 'pending',
-      setupStatus: 'pending setup',
-      lastGenerated: '-'
-    }
-  ];
+  const fetchAdminData = async () => {
+    setLoading(true);
+    setError('');
 
-  const authLogs = [
-    {
-      id: 1,
-      email: 'student@example.com',
-      event: 'Successful 2FA verification',
-      result: 'success',
-      time: '10:44:03'
-    },
-    {
-      id: 2,
-      email: 'student@example.com',
-      event: 'Failed 2FA verification',
-      result: 'failure',
-      time: '10:43:42'
-    }
-  ];
+    try {
+      const token = localStorage.getItem('token');
 
-  const handleLogout = () => {
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const [usersResponse, keygenResponse, logsResponse] = await Promise.all([
+        fetch(`${BACKEND_URL}/admin/users`, {
+          method: 'GET',
+          headers
+        }),
+        fetch(`${BACKEND_URL}/admin/keygen-accounts`, {
+          method: 'GET',
+          headers
+        }),
+        fetch(`${BACKEND_URL}/admin/auth-logs`, {
+          method: 'GET',
+          headers
+        })
+      ]);
+
+      if (!usersResponse.ok) {
+        throw new Error('Failed to load users');
+      }
+
+      if (!keygenResponse.ok) {
+        throw new Error('Failed to load keygen accounts');
+      }
+
+      if (!logsResponse.ok) {
+        throw new Error('Failed to load authentication logs');
+      }
+
+      const usersData = await usersResponse.json();
+      const keygenData = await keygenResponse.json();
+      const logsData = await logsResponse.json();
+
+      setUsers(usersData);
+      setKeygenAccounts(keygenData);
+      setAuthLogs(logsData);
+    } catch (err) {
+      console.error('Admin data fetch failed:', err);
+      setError('Could not load admin data. Please check if the backend is running.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAdminData();
+  }, []);
+
+  const handleToggleUserStatus = async (userId, currentStatus) => {
+    const newStatus = currentStatus === 1 ? 0 : 1;
+
+    try {
+      const token = localStorage.getItem('token');
+
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${BACKEND_URL}/admin/users/${userId}/status`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({
+          is_active: newStatus
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || 'Could not update user status');
+        return;
+      }
+
+      setError('');
+
+      // Reload admin data so users, keygen accounts, and logs all update
+      fetchAdminData();
+    } catch (err) {
+      console.error('Status update failed:', err);
+      setError('Could not update user status. Please try again.');
+    }
+  };
+
+  const handleLogout = async () => {
+    const token = localStorage.getItem('token');
+
+    try {
+      await fetch(`${BACKEND_URL}/logout`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+    } catch (err) {
+      console.log('Logout API failed, clearing local session anyway.');
+    }
+
     localStorage.removeItem('token');
     localStorage.removeItem('user');
 
     navigate('/login');
   };
+
+  const activeUsersCount = users.filter((user) => user.is_active === 1).length;
+  const activeKeygenCount = keygenAccounts.filter((account) => account.is_active === 1).length;
+  const failedAuthCount = authLogs.filter((log) => log.success === 0).length;
+
+  if (loading) {
+    return (
+      <div className="admin-page">
+        <main className="admin-loading">
+          <h1>Loading admin dashboard...</h1>
+          <p>Please wait while system data is retrieved.</p>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-page">
@@ -102,8 +181,8 @@ function Admin() {
             <h1>Admin Dashboard</h1>
 
             <p>
-              Manage main application users, authenticator accounts, and
-              authentication activity.
+              Manage users, keygen accounts, and authentication activity
+              across the Secure Chess system.
             </p>
           </div>
 
@@ -111,6 +190,12 @@ function Admin() {
             Back to game
           </Link>
         </header>
+
+        {error && (
+          <div className="admin-error">
+            {error}
+          </div>
+        )}
 
         <section className="stats-grid">
           <div className="stat-card">
@@ -120,17 +205,17 @@ function Admin() {
 
           <div className="stat-card">
             <span>Active Users</span>
-            <strong>{users.filter((user) => user.status === 'active').length}</strong>
+            <strong>{activeUsersCount}</strong>
           </div>
 
           <div className="stat-card">
-            <span>Keygen Accounts</span>
-            <strong>{keygenAccounts.length}</strong>
+            <span>Active Keygen Accounts</span>
+            <strong>{activeKeygenCount}</strong>
           </div>
 
           <div className="stat-card">
-            <span>Code Interval</span>
-            <strong>15s</strong>
+            <span>Failed Auth Events</span>
+            <strong>{failedAuthCount}</strong>
           </div>
         </section>
 
@@ -141,7 +226,9 @@ function Admin() {
               <p>View and manage users registered in the main chess application.</p>
             </div>
 
-            <button>Add User</button>
+            <button onClick={fetchAdminData}>
+              Refresh
+            </button>
           </div>
 
           <table className="admin-table">
@@ -151,6 +238,7 @@ function Admin() {
                 <th>Role</th>
                 <th>Status</th>
                 <th>Created</th>
+                <th>Updated</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -161,13 +249,19 @@ function Admin() {
                   <td>{user.email}</td>
                   <td>{user.role}</td>
                   <td>
-                    <span className={`status ${user.status}`}>
-                      {user.status}
+                    <span className={`status ${user.is_active === 1 ? 'active' : 'disabled'}`}>
+                      {user.is_active === 1 ? 'active' : 'disabled'}
                     </span>
                   </td>
-                  <td>{user.createdAt}</td>
+                  <td>{user.created_at || '-'}</td>
+                  <td>{user.updated_at || '-'}</td>
                   <td>
-                    <button className="table-action">Manage</button>
+                    <button
+                      className="table-action"
+                      onClick={() => handleToggleUserStatus(user.id, user.is_active)}
+                    >
+                      {user.is_active === 1 ? 'Disable' : 'Enable'}
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -180,21 +274,19 @@ function Admin() {
             <div>
               <h2>Keygen Account Management</h2>
               <p>
-                Manage authenticator/keygen accounts linked to main app users.
+                View keygen accounts linked to registered users.
               </p>
             </div>
-
-            <button>Create Keygen Account</button>
           </div>
 
           <table className="admin-table">
             <thead>
               <tr>
                 <th>User Email</th>
+                <th>User ID</th>
                 <th>Status</th>
-                <th>Setup</th>
                 <th>Last Generated</th>
-                <th>Action</th>
+                <th>Created</th>
               </tr>
             </thead>
 
@@ -202,16 +294,14 @@ function Admin() {
               {keygenAccounts.map((account) => (
                 <tr key={account.id}>
                   <td>{account.email}</td>
+                  <td>{account.user_id}</td>
                   <td>
-                    <span className={`status ${account.status}`}>
-                      {account.status}
+                    <span className={`status ${account.is_active === 1 ? 'active' : 'disabled'}`}>
+                      {account.is_active === 1 ? 'active' : 'disabled'}
                     </span>
                   </td>
-                  <td>{account.setupStatus}</td>
-                  <td>{account.lastGenerated}</td>
-                  <td>
-                    <button className="table-action">Reset</button>
-                  </td>
+                  <td>{account.last_generated_at || '-'}</td>
+                  <td>{account.created_at || '-'}</td>
                 </tr>
               ))}
             </tbody>
@@ -222,7 +312,7 @@ function Admin() {
           <div className="section-header">
             <div>
               <h2>Authentication Logs</h2>
-              <p>Recent login and 2FA verification activity.</p>
+              <p>Recent login, 2FA, and admin activity.</p>
             </div>
           </div>
 
@@ -232,6 +322,7 @@ function Admin() {
                 <th>Email</th>
                 <th>Event</th>
                 <th>Result</th>
+                <th>IP Address</th>
                 <th>Time</th>
               </tr>
             </thead>
@@ -239,14 +330,15 @@ function Admin() {
             <tbody>
               {authLogs.map((log) => (
                 <tr key={log.id}>
-                  <td>{log.email}</td>
-                  <td>{log.event}</td>
+                  <td>{log.email || 'Unknown user'}</td>
+                  <td>{log.event_type}</td>
                   <td>
-                    <span className={`status ${log.result}`}>
-                      {log.result}
+                    <span className={`status ${log.success === 1 ? 'success' : 'failure'}`}>
+                      {log.success === 1 ? 'success' : 'failure'}
                     </span>
                   </td>
-                  <td>{log.time}</td>
+                  <td>{log.ip_address || '-'}</td>
+                  <td>{log.created_at || '-'}</td>
                 </tr>
               ))}
             </tbody>

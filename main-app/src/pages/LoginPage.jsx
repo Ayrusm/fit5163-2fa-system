@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import '../styles/Login.css';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import "../styles/Login.css";
 
 function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const navigate = useNavigate();
 
@@ -28,59 +28,53 @@ function Login() {
   // No JWT should be issued yet.
   // JWT should only be issued after successful 2FA verification.
   // ============================================================
-  const BACKEND_URL = 'http://localhost:5000/login';
+  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
   const handleLogin = async () => {
-    if (email === '' || password === '') {
-      setError('Please fill in all fields');
+    if (email === "" || password === "") {
+      setError("Please fill in all fields");
       return;
     }
 
     try {
-      const response = await fetch(BACKEND_URL, {
-        method: 'POST',
+      const response = await fetch(`${BACKEND_URL}/login`, {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email,
-          password
-        })
+          password,
+        }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        setError('');
+        setError("");
 
-        // Send the user to the 2FA code entry page.
-        // The same email is passed to the page.
-        navigate('/authenticate', {
-          state: { email }
+        navigate("/authenticate", {
+          state: { email },
         });
       } else {
-        setError(data.message || 'Invalid email or password');
+        setError(data.message || "Invalid email or password");
       }
     } catch (err) {
-      setError('Could not connect to server. Is the backend running?');
+      setError("Could not connect to server.");
     }
   };
 
   const openAuthenticator = () => {
-    const AUTHENTICATOR_LOGIN_URL = 'http://localhost:3001/login';
+    const AUTHENTICATOR_LOGIN_URL = "http://localhost:3001/login";
 
     if (email) {
       window.open(
         `${AUTHENTICATOR_LOGIN_URL}?email=${encodeURIComponent(email)}`,
-        '_blank',
-        'width=480,height=700'
+        "_blank",
+        "width=480,height=700",
       );
     } else {
-      window.open(
-        AUTHENTICATOR_LOGIN_URL,
-        '_blank',
-        'width=480,height=700'
-      );
+      window.open(AUTHENTICATOR_LOGIN_URL, "_blank", "width=480,height=700");
     }
   };
 
@@ -104,8 +98,8 @@ function Login() {
           <h2>Sign in</h2>
 
           <p className="login-description">
-            Enter your main application credentials. You will be asked for a
-            2FA code after this step.
+            Enter your main application credentials. You will be asked for a 2FA
+            code after this step.
           </p>
 
           <div className="form-group">

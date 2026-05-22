@@ -39,7 +39,7 @@ function CodeDisplay() {
         setError(data.message || 'Could not load verification code');
       }
     } catch (err) {
-      setError('Could not connect to server. Is the backend running?');
+      setError('Could not connect to server.');
     }
   };
 
