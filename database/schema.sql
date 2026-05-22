@@ -1,13 +1,14 @@
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE users (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    email         TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    role          TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('user', 'admin')),
-    is_active     INTEGER NOT NULL DEFAULT 1,
-    created_at    TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
+    id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+    email                   TEXT NOT NULL UNIQUE,
+    password_hash           TEXT NOT NULL,        -- chess app password
+    auth_app_password_hash  TEXT NOT NULL,         -- authenticator app password
+    role                    TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('user', 'admin')),
+    is_active               INTEGER NOT NULL DEFAULT 1,
+    created_at              TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at              TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE keygen_accounts (

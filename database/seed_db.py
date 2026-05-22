@@ -19,29 +19,32 @@ def seed():
     cursor = conn.cursor()
 
     test_users = [
-        ('alice@test.com', 'password123', 'admin'),
-        ('bob@test.com',   'password123', 'user'),
-        ('charlie@test.com','password123', 'user'),
+        ('alice@test.com',   'chesspass123', 'authpass123', 'admin'),
+        ('bob@test.com',     'chesspass123', 'authpass456', 'user'),
+        ('charlie@test.com', 'chesspass123', 'authpass789', 'user'),
     ]
 
-    for email, password, role in test_users:
-        # Insert into users
+    for email, chess_password, auth_password, role in test_users:
         cursor.execute('''
-            INSERT OR IGNORE INTO users (email, password_hash, role)
-            VALUES (?, ?, ?)
-        ''', (email, hash_password(password), role))
+            INSERT OR IGNORE INTO users 
+                (email, password_hash, auth_app_password_hash, role)
+            VALUES (?, ?, ?, ?)
+        ''', (
+            email,
+            hash_password(chess_password),
+            hash_password(auth_password),
+            role
+        ))
 
-        # Get the user id
         cursor.execute('SELECT id FROM users WHERE email = ?', (email,))
         user_id = cursor.fetchone()[0]
 
-        # Insert into keygen_accounts
         cursor.execute('''
             INSERT OR IGNORE INTO keygen_accounts (user_id, secret_key, hash_salt)
             VALUES (?, ?, ?)
         ''', (user_id, generate_secret_key(), hash_email(email)))
 
-        print(f"Seeded user: {email}")
+        print(f"Seeded: {email}")
 
     conn.commit()
     conn.close()
