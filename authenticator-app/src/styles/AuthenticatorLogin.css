@@ -1,0 +1,55 @@
+.authenticator-login-card {
+  width: 100%;
+  max-width: 460px;
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.38);
+  overflow: hidden;
+}
+
+.authenticator-login-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 28px 32px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+.authenticator-login-brand h1 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 18px;
+}
+
+.authenticator-login-brand p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.authenticator-login-content {
+  padding: 32px;
+}
+
+.authenticator-login-content h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 28px;
+  letter-spacing: -0.04em;
+}
+
+.authenticator-login-description {
+  margin: 12px 0 24px;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+@media (max-width: 520px) {
+  .authenticator-login-brand,
+  .authenticator-login-content {
+    padding: 24px;
+  }
+}
