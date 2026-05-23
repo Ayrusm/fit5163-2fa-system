@@ -7,8 +7,8 @@ import threading
 from flask import Flask, request, jsonify
 import jwt
 import datetime
+from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
-from db import get_db
 
 sys.path.append(os.path.dirname(__file__))
 
@@ -19,10 +19,10 @@ from db_helper import get_active_users, save_code
 # Flask app setup
 # ─────────────────────────────────────────
 app = Flask(__name__)
+CORS(app, origins=["http://localhost:3001"])
 JWT_SECRET = os.getenv("JWT_SECRET", "change_this_secret")
 
-DB_PATH = os.path.join(os.path.dirname(__file__), '..', '2fa.db')
-
+DB_PATH = os.path.join(os.path.dirname(__file__), '..', '2fa_app.db')
 
 
 # ─────────────────────────────────────────
@@ -61,7 +61,7 @@ def authenticator_register():
             "error": "Email and authenticator password are required"
         }), 400
 
-    conn = get_db()
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     user = cursor.execute("""
@@ -77,14 +77,18 @@ def authenticator_register():
             "error": "Main app account not found. Please register in the main app first."
         }), 404
 
-    if user["is_active"] != 1:
+    user_id = user[0]
+    is_active = user[1]
+    existing_keygen_password_hash = user[2]
+
+    if is_active != 1:
         conn.close()
         return jsonify({
             "success": False,
             "error": "Main app account is suspended."
         }), 403
 
-    if user["keygen_password_hash"]:
+    if existing_keygen_password_hash:
         conn.close()
         return jsonify({
             "success": False,
@@ -95,7 +99,7 @@ def authenticator_register():
         SELECT id
         FROM keygen_accounts
         WHERE user_id = ?
-    """, (user["id"],)).fetchone()
+    """, (user_id,)).fetchone()
 
     if not keygen_account:
         conn.close()
@@ -104,28 +108,40 @@ def authenticator_register():
             "error": "Keygen account row does not exist."
         }), 500
 
+    keygen_account_id = keygen_account[0]
     keygen_password_hash = generate_password_hash(password)
 
     cursor.execute("""
         UPDATE users
         SET keygen_password_hash = ?, updated_at = datetime('now')
         WHERE id = ?
-    """, (keygen_password_hash, user["id"]))
+    """, (keygen_password_hash, user_id))
 
     cursor.execute("""
         UPDATE keygen_accounts
         SET is_active = 1
         WHERE user_id = ?
-    """, (user["id"],))
+    """, (user_id,))
 
     conn.commit()
     conn.close()
 
+    token = jwt.encode({
+        "user_id": user_id,
+        "keygen_account_id": keygen_account_id,
+        "scope": "authenticator",
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=2)
+    }, JWT_SECRET, algorithm="HS256")
+
     return jsonify({
         "success": True,
-        "message": "Authenticator account created successfully."
+        "message": "Authenticator account created successfully.",
+        "token": token,
+        "user": {
+            "id": user_id,
+            "email": email
+        }
     }), 201
-    
     
 # ─────────────────────────────────────────
 # Authenticator routes

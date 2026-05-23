@@ -2,7 +2,7 @@ import sqlite3
 import os
 from datetime import datetime, timedelta
 
-DB_PATH = os.path.join(os.path.dirname(__file__), '..', '2fa.db')
+DB_PATH = os.path.join(os.path.dirname(__file__), '..', '2fa_app.db')
 
 def get_connection():
     conn = sqlite3.connect(DB_PATH)

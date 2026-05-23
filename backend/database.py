@@ -6,10 +6,11 @@ def create_database():
 
     # Table 1 — Users
     cursor.execute('''
-    CREATE TABLE IF NOT EXISTS users (
+        CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT NOT NULL UNIQUE,
         password_hash TEXT NOT NULL,
+        keygen_password_hash TEXT,
         role TEXT NOT NULL DEFAULT 'user' 
             CHECK(role IN ('user','admin')),
         is_active INTEGER NOT NULL DEFAULT 1,

@@ -1,20 +1,21 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import '../styles/AuthenticatorRegister.css';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "../styles/AuthenticatorRegister.css";
 
 function AuthenticatorRegister() {
-  const [email, setEmail] = useState('');
-  const [authenticatorPassword, setAuthenticatorPassword] = useState('');
-  const [confirmAuthenticatorPassword, setConfirmAuthenticatorPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [authenticatorPassword, setAuthenticatorPassword] = useState("");
+  const [confirmAuthenticatorPassword, setConfirmAuthenticatorPassword] =
+    useState("");
+  const [error, setError] = useState("");
 
   const navigate = useNavigate();
 
-  const BACKEND_URL = 'http://localhost:5000/authenticator/register';
+  const BACKEND_URL = process.env.REACT_APP_AUTHENTICATOR_BACKEND_URL;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const emailFromUrl = params.get('email');
+    const emailFromUrl = params.get("email");
 
     if (emailFromUrl) {
       setEmail(emailFromUrl);
@@ -23,44 +24,44 @@ function AuthenticatorRegister() {
 
   const handleRegister = async () => {
     if (
-      email === '' ||
-      authenticatorPassword === '' ||
-      confirmAuthenticatorPassword === ''
+      email === "" ||
+      authenticatorPassword === "" ||
+      confirmAuthenticatorPassword === ""
     ) {
-      setError('Please fill in all fields');
+      setError("Please fill in all fields");
       return;
     }
 
     if (authenticatorPassword !== confirmAuthenticatorPassword) {
-      setError('Authenticator passwords do not match');
+      setError("Authenticator passwords do not match");
       return;
     }
 
     try {
-      const response = await fetch(BACKEND_URL, {
-        method: 'POST',
+      const response = await fetch(`${BACKEND_URL}/authenticator/register`, {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email,
-          authenticatorPassword
-        })
+          password: authenticatorPassword,
+        }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem('authenticatorToken', data.token);
-        localStorage.setItem('authenticatorUser', JSON.stringify(data.user));
+        localStorage.setItem("authenticatorToken", data.token);
+        localStorage.setItem("authenticatorUser", JSON.stringify(data.user));
 
-        setError('');
-        navigate('/code');
+        setError("");
+        navigate("/code");
       } else {
-        setError(data.message || 'Could not create authenticator account');
+        setError(data.message || "Could not create authenticator account");
       }
     } catch (err) {
-      setError('Could not connect to server.');
+      setError("Could not connect to server.");
     }
   };
 
@@ -80,8 +81,8 @@ function AuthenticatorRegister() {
           <h2>Create authenticator account</h2>
 
           <p className="authenticator-register-description">
-            This account is separate from your main chess account. Use a different
-            password or PIN to protect your 2FA code generator.
+            This account is separate from your main chess account. Use a
+            different password or PIN to protect your 2FA code generator.
           </p>
 
           <div className="form-group">
@@ -122,7 +123,7 @@ function AuthenticatorRegister() {
 
           <button
             className="secondary-button"
-            onClick={() => navigate('/login')}
+            onClick={() => navigate("/login")}
           >
             Already set up? Sign in
           </button>

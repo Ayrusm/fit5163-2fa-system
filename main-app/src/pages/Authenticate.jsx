@@ -15,12 +15,14 @@ function Authenticate() {
   const AUTHENTICATOR_URL = process.env.REACT_APP_AUTHENTICATOR_URL;
 
   const handleCodeChange = (e) => {
-    const value = e.target.value.replace(/\D/g, '');
+  // Allow letters and numbers only
+  const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
 
-    if (value.length <= 6) {
-      setCode(value);
-    }
-  };
+  // Maximum 6 characters only
+  if (value.length <= 6) {
+    setCode(value.toUpperCase());
+  }
+};
 
   const openAuthenticator = () => {
     const authenticatorLoginUrl = `${AUTHENTICATOR_URL}/login`;

@@ -1,45 +1,66 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import '../styles/CodeDisplay.css';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "../styles/CodeDisplay.css";
 
 function CodeDisplay() {
-  const [code, setCode] = useState('------');
+  const [code, setCode] = useState("------");
   const [expiresIn, setExpiresIn] = useState(15);
-  const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
 
   const navigate = useNavigate();
 
-  const BACKEND_URL = 'http://localhost:5000/authenticator/code';
+  const BACKEND_URL = process.env.REACT_APP_AUTHENTICATOR_BACKEND_URL;
 
   const fetchCurrentCode = async () => {
-    const token = localStorage.getItem('authenticatorToken');
+    const token = localStorage.getItem("authenticatorToken");
 
-    // if (!token) {
-    //   navigate('/login');
-    //   return;
-    // }
+    if (!token) {
+      navigate("/login");
+      return;
+    }
 
     try {
-      const response = await fetch(BACKEND_URL, {
-        method: 'GET',
+      const response = await fetch(`${BACKEND_URL}/authenticator/code`, {
+        method: "GET",
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       const data = await response.json();
 
-      if (response.ok) {
-        setCode(data.code);
-        setExpiresIn(data.expiresIn);
-        setEmail(data.email);
-        setError('');
-      } else {
-        setError(data.message || 'Could not load verification code');
+      if (!response.ok) {
+        setError(data.error || "Could not load verification code");
+
+        if (response.status === 401) {
+          localStorage.removeItem("authenticatorToken");
+          localStorage.removeItem("authenticatorUser");
+          navigate("/login");
+        }
+
+        return;
       }
+
+      if (!data.code) {
+        setError(data.error || "No verification code available yet.");
+        return;
+      }
+
+      setCode(data.code);
+      setExpiresIn(data.seconds_left || 15);
+
+      const storedUser = localStorage.getItem("authenticatorUser");
+
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        setEmail(parsedUser.email);
+      }
+
+      setError("");
     } catch (err) {
-      setError('Could not connect to server.');
+      console.error("Code fetch failed:", err);
+      setError("Could not connect to authenticator server.");
     }
   };
 
@@ -53,11 +74,24 @@ function CodeDisplay() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('authenticatorToken');
-    localStorage.removeItem('authenticatorUser');
+  const handleLogout = async () => {
+    const token = localStorage.getItem("authenticatorToken");
 
-    navigate('/login');
+    try {
+      await fetch(`${BACKEND_URL}/authenticator/logout`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    } catch (err) {
+      console.log("Authenticator logout failed, clearing local token anyway.");
+    }
+
+    localStorage.removeItem("authenticatorToken");
+    localStorage.removeItem("authenticatorUser");
+
+    navigate("/login");
   };
 
   return (
@@ -74,7 +108,7 @@ function CodeDisplay() {
 
         <section className="account-box">
           <span>Account</span>
-          <strong>{email || 'Loading account...'}</strong>
+          <strong>{email || "Loading account..."}</strong>
         </section>
 
         <section className="code-display-box">
@@ -88,8 +122,8 @@ function CodeDisplay() {
         </section>
 
         <p className="code-description">
-          Enter this 6-digit code in the main Secure Chess application.
-          The code refreshes every 15 seconds.
+          Enter this 6-digit code in the main Secure Chess application. The code
+          refreshes every 15 seconds.
         </p>
 
         {error && <div className="error-box">{error}</div>}
