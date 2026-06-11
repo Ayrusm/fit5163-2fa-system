@@ -1,3 +1,12 @@
+"""
+Program: auth_routes.py
+
+Purpose: Defines the public authentication API for the main CheckMate
+         application. The routes in this file register users, validate
+         passwords, verify two-factor authentication codes, issue JWT session
+         tokens, and record authentication events for auditing.
+"""
+
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import get_db
@@ -7,6 +16,17 @@ import re
 auth_bp = Blueprint("auth", __name__)
 
 def validate_game_password(password):
+    """
+    Purpose: Checks that a main application password satisfies the minimum
+             security requirements before it is stored.
+
+    Parameters:
+        password -- The plaintext password entered by the user.
+
+    Returns:
+        A validation error message when the password is invalid, otherwise
+        None.
+    """
     if len(password) < 8:
         return "Password must be at least 8 characters long"
 
@@ -17,6 +37,13 @@ def validate_game_password(password):
 
 @auth_bp.route("/register", methods=["POST"])
 def register():
+    """
+    Purpose: Creates a new main application user and the matching keygen
+             account used later by the authenticator service.
+
+    Returns:
+        A JSON response describing success or the reason registration failed.
+    """
     data = request.get_json()
     email = data.get("email", "").lower().strip()
     password = data.get("password", "")
@@ -46,6 +73,7 @@ def register():
     hash_salt = sha256_hash(email)
 
     try:
+        # Store the main account first so the generated user id can link to 2FA.
         cursor.execute("""
             INSERT INTO users (email, password_hash, role, is_active)
             VALUES (?, ?, 'user', 1)
@@ -73,6 +101,14 @@ def register():
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
+    """
+    Purpose: Verifies the user's email and password before the second factor
+             is requested.
+
+    Returns:
+        A JSON response confirming password verification or explaining why the
+        login attempt failed.
+    """
     data = request.get_json()
     email = data.get("email", "").lower().strip()
     password = data.get("password", "")
@@ -108,6 +144,14 @@ def login():
 
 @auth_bp.route("/authenticate", methods=["POST"])
 def authenticate():
+    """
+    Purpose: Completes login by checking the submitted 2FA code against the
+             active unused code stored for the user's keygen account.
+
+    Returns:
+        A JSON response containing a JWT and user details when authentication
+        succeeds, otherwise an error response.
+    """
     data = request.get_json()
     email = data.get("email", "").lower().strip()
     code = data.get("code", "")
@@ -139,6 +183,7 @@ def authenticate():
 
     code_hash = sha256_hash(code)
 
+    # Only unused, unexpired codes are accepted so each code can be used once.
     active_code = cursor.execute("""
         SELECT * FROM active_codes
         WHERE keygen_account_id = ?
@@ -179,4 +224,11 @@ def authenticate():
 
 @auth_bp.route("/logout", methods=["POST"])
 def logout():
+    """
+    Purpose: Provides a logout endpoint for the frontend. JWT sessions are
+             stateless, so the client removes its saved token.
+
+    Returns:
+        A JSON response confirming logout.
+    """
     return jsonify({"message": "Logged out successfully"}), 200

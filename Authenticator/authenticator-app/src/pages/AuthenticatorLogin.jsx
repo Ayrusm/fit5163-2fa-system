@@ -1,7 +1,20 @@
+/*
+ * Program: AuthenticatorLogin.jsx
+ *
+ * Purpose: Displays the Secure Authenticator login page. The page verifies the
+ *          authenticator password and stores the returned authenticator token.
+ */
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/AuthenticatorLogin.css";
 
+/*
+ * Component: AuthenticatorLogin
+ *
+ * Purpose: Collects authenticator credentials and redirects the user to the
+ *          current verification code page after successful login.
+ */
 function AuthenticatorLogin() {
   const [email, setEmail] = useState("");
   const [authenticatorPassword, setAuthenticatorPassword] = useState("");
@@ -12,6 +25,10 @@ function AuthenticatorLogin() {
   const BACKEND_URL = process.env.REACT_APP_AUTHENTICATOR_BACKEND_URL;
 
   const handleLogin = async () => {
+    /*
+     * Purpose: Sends authenticator credentials to the backend and saves the
+     *          authenticator-scoped JWT returned by the server.
+     */
     if (email === "" || authenticatorPassword === "") {
       setError("Please fill in all fields");
       return;

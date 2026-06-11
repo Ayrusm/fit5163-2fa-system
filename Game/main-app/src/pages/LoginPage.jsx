@@ -1,7 +1,21 @@
+/*
+ * Program: LoginPage.jsx
+ *
+ * Purpose: Displays the main CheckMate login form. The page verifies the
+ *          user's password with the backend and then moves the user to the 2FA
+ *          verification step.
+ */
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import "../styles/Login.css";
 
+/*
+ * Component: Login
+ *
+ * Purpose: Collects main application credentials, starts the login flow, and
+ *          provides a shortcut to the separate authenticator app.
+ */
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,6 +30,10 @@ function Login() {
   const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
   useEffect(() => {
+    /*
+     * Purpose: Hides the registration success message after a short delay so
+     *          the login form remains uncluttered.
+     */
     if (setupMessage) {
       const timer = setTimeout(() => {
         setShowToast(false);
@@ -26,6 +44,10 @@ function Login() {
   }, [setupMessage]);
 
   const handleLogin = async () => {
+    /*
+     * Purpose: Sends the user's email and password to the backend. A successful
+     *          response advances the user to the 2FA code page.
+     */
     if (email === "" || password === "") {
       setError("Please fill in all fields");
       return;
@@ -60,6 +82,10 @@ function Login() {
   };
 
   const openAuthenticator = () => {
+    /*
+     * Purpose: Opens the authenticator app in a separate window, passing the
+     *          email when available to save the user from retyping it.
+     */
     const AUTHENTICATOR_LOGIN_URL = "http://localhost:3001/login";
 
     if (email) {

@@ -1,3 +1,12 @@
+"""
+Program: keygen_app.py
+
+Purpose: Runs the Secure Authenticator backend. The program starts a Flask API
+         for authenticator registration, login, code display, and logout while
+         a background loop continuously generates short-lived 2FA codes for
+         active keygen accounts.
+"""
+
 import time
 import sys
 import os
@@ -29,6 +38,13 @@ DB_PATH = os.path.join(BASE_DIR, "Game", "2fa_app.db")
 # Keygen background loop
 # ─────────────────────────────────────────
 def run_keygen_loop():
+    """
+    Purpose: Continuously generates and stores fresh verification codes for all
+             active keygen accounts.
+
+    Returns:
+        None. This function is intended to run until the process stops.
+    """
     print("Keygen loop started. Generating codes every 15 seconds...")
     while True:
         try:
@@ -50,6 +66,14 @@ def run_keygen_loop():
 
 @app.route("/authenticator/register", methods=["POST"])
 def authenticator_register():
+    """
+    Purpose: Creates the authenticator-side password for an existing main app
+             user and activates the linked keygen account.
+
+    Returns:
+        A JSON response containing an authenticator JWT when setup succeeds or
+        an error response when setup cannot be completed.
+    """
     data = request.get_json()
 
     email = data.get("email", "").lower().strip()
@@ -111,6 +135,7 @@ def authenticator_register():
     keygen_account_id = keygen_account[0]
     keygen_password_hash = generate_password_hash(password)
 
+    # The authenticator password is stored on the existing main user account.
     cursor.execute("""
         UPDATE users
         SET keygen_password_hash = ?, updated_at = datetime('now')
@@ -148,6 +173,13 @@ def authenticator_register():
 # ─────────────────────────────────────────
 @app.route('/authenticator/login', methods=['POST'])
 def authenticator_login():
+    """
+    Purpose: Verifies authenticator credentials and issues an authenticator
+             scoped JWT for viewing temporary codes.
+
+    Returns:
+        A JSON response containing the token or an error response.
+    """
     data = request.get_json()
     email = data.get('email')
     password = data.get('password')
@@ -192,6 +224,14 @@ def authenticator_login():
 
 @app.route('/authenticator/code', methods=['GET'])
 def get_current_code():
+    """
+    Purpose: Returns the current visible verification code for the logged-in
+             authenticator user.
+
+    Returns:
+        A JSON response containing the raw code and time remaining, or an error
+        response if the token or code is invalid.
+    """
     auth_header = request.headers.get('Authorization', '')
     if not auth_header.startswith('Bearer '):
         return jsonify({'success': False, 'error': 'Not logged in'}), 401
@@ -210,6 +250,7 @@ def get_current_code():
 
     keygen_account_id = payload['keygen_account_id']
 
+    # Look up the latest unexpired stored code before recalculating the raw value.
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute('''
@@ -248,11 +289,23 @@ def get_current_code():
 
 @app.route('/authenticator/logout', methods=['POST'])
 def authenticator_logout():
+    """
+    Purpose: Provides a logout endpoint for the authenticator frontend.
+
+    Returns:
+        A JSON response confirming logout.
+    """
     # JWT is stateless — frontend just deletes the token
     return jsonify({'success': True})
 
 @app.route('/keygen/status', methods=['GET'])
 def status():
+    """
+    Purpose: Reports whether the authenticator/keygen service is running.
+
+    Returns:
+        A JSON response with a running flag.
+    """
     return jsonify({ 'running': True })
 
 

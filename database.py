@@ -1,6 +1,24 @@
+"""
+Program: database.py
+
+Purpose: Creates a standalone SQLite database schema for the 2FA application.
+         The schema includes user accounts, keygen account data, active
+         verification codes, and authentication log records.
+"""
+
 import sqlite3
 
 def create_database():
+    """
+    Purpose: Creates all required database tables if they do not already exist.
+
+    Post-condition:
+        The local 2fa_app.db database contains the user, keygen, active code,
+        and authentication log tables.
+
+    Returns:
+        None.
+    """
     conn = sqlite3.connect('2fa_app.db')
     cursor = conn.cursor()
 
@@ -70,7 +88,3 @@ try:
     create_database()
 except Exception as e:
     print(f"Error: {e}")
-
-
-
-    

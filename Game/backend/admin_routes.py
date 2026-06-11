@@ -1,3 +1,11 @@
+"""
+Program: admin_routes.py
+
+Purpose: Defines administrator API routes for the CheckMate 2FA system. These
+         routes expose user records, keygen account records, authentication
+         logs, and account status updates for the admin dashboard.
+"""
+
 from flask import Blueprint, request, jsonify
 from db import get_db
 
@@ -5,6 +13,12 @@ admin_bp = Blueprint("admin", __name__)
 
 @admin_bp.route("/admin/users", methods=["GET"])
 def get_admin_users():
+    """
+    Purpose: Retrieves all registered users for the admin dashboard.
+
+    Returns:
+        A JSON list of user records ordered by creation date.
+    """
     conn = get_db()
     cursor = conn.cursor()
 
@@ -20,6 +34,12 @@ def get_admin_users():
 
 @admin_bp.route("/admin/keygen-accounts", methods=["GET"])
 def get_keygen_accounts():
+    """
+    Purpose: Retrieves keygen accounts and their linked user email addresses.
+
+    Returns:
+        A JSON list of keygen account records ordered by creation date.
+    """
     conn = get_db()
     cursor = conn.cursor()
 
@@ -42,6 +62,12 @@ def get_keygen_accounts():
 
 @admin_bp.route("/admin/auth-logs", methods=["GET"])
 def get_auth_logs():
+    """
+    Purpose: Retrieves recent authentication and admin events for auditing.
+
+    Returns:
+        A JSON list containing up to the latest 100 authentication log entries.
+    """
     conn = get_db()
     cursor = conn.cursor()
 
@@ -66,6 +92,17 @@ def get_auth_logs():
 
 @admin_bp.route("/admin/users/<int:user_id>/status", methods=["PATCH"])
 def update_user_status(user_id):
+    """
+    Purpose: Enables or disables a user account and keeps the linked keygen
+             account in the same active state.
+
+    Parameters:
+        user_id -- The database id of the user whose status should be updated.
+
+    Returns:
+        A JSON response describing the updated account status or the validation
+        error that prevented the update.
+    """
     data = request.get_json()
     is_active = data.get("is_active")
 
@@ -98,6 +135,7 @@ def update_user_status(user_id):
 
     event_type = "account_suspended" if is_active == 0 else "admin_action"
 
+    # Record the status change so the admin activity appears in auth logs.
     cursor.execute("""
         INSERT INTO auth_logs (user_id, event_type, success, ip_address)
         VALUES (?, ?, ?, ?)

@@ -1,7 +1,21 @@
+/*
+ * Program: Register.jsx
+ *
+ * Purpose: Displays the main CheckMate account registration page. After a user
+ *          registers successfully, the page opens the authenticator setup flow.
+ */
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles/Register.css";
 
+/*
+ * Component: Register
+ *
+ * Purpose: Collects account details, validates the password locally, creates a
+ *          main application account, and directs the user to authenticator
+ *          setup.
+ */
 const Register = () => {
   const navigate = useNavigate();
   
@@ -15,6 +29,10 @@ const Register = () => {
   const AUTHENTICATOR_URL = process.env.REACT_APP_AUTHENTICATOR_URL;
 
   const handleRegister = async () => {
+    /*
+     * Purpose: Validates the form and sends registration details to the main
+     *          backend before opening the authenticator registration page.
+     */
     if (email === "" || password === "" || confirmPassword === "") {
       setError("Please fill in all fields");
       return;
@@ -71,6 +89,10 @@ const Register = () => {
   };
 
   const validatePassword = (password) => {
+    /*
+     * Purpose: Enforces the same visible password rules used by the backend so
+     *          users receive immediate feedback.
+     */
     if (password.length < 8) {
       return "Password must be at least 8 characters long";
     }

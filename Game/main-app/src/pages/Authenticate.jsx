@@ -1,7 +1,21 @@
+/*
+ * Program: Authenticate.jsx
+ *
+ * Purpose: Handles the second step of main application login. The user enters
+ *          the current authenticator code, and a successful check stores the
+ *          returned session token.
+ */
+
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "../styles/Authenticate.css";
 
+/*
+ * Component: Authenticate
+ *
+ * Purpose: Collects and verifies the 2FA code for the email address that
+ *          passed password verification on the login page.
+ */
 function Authenticate() {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
@@ -15,6 +29,10 @@ function Authenticate() {
   const AUTHENTICATOR_URL = process.env.REACT_APP_AUTHENTICATOR_URL;
 
   const handleCodeChange = (e) => {
+    /*
+     * Purpose: Normalizes code entry so the backend receives only up to six
+     *          uppercase alphanumeric characters.
+     */
     // Allow letters and numbers only
     const value = e.target.value.replace(/[^a-zA-Z0-9]/g, "");
 
@@ -25,6 +43,10 @@ function Authenticate() {
   };
 
   const openAuthenticator = () => {
+    /*
+     * Purpose: Opens the separate authenticator app where the user can view
+     *          the current 2FA code.
+     */
     const authenticatorLoginUrl = `${AUTHENTICATOR_URL}/login`;
 
     if (email) {
@@ -39,6 +61,10 @@ function Authenticate() {
   };
 
   const handleVerifyCode = async () => {
+    /*
+     * Purpose: Sends the email and code to the backend. A valid response stores
+     *          the session and redirects users by role.
+     */
     if (!email) {
       setError("No login session found. Please return to login.");
       return;

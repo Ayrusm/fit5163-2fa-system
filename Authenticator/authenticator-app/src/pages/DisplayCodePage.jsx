@@ -1,7 +1,20 @@
+/*
+ * Program: DisplayCodePage.jsx
+ *
+ * Purpose: Displays the current Secure Authenticator verification code and
+ *          refresh countdown for the logged-in authenticator user.
+ */
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/CodeDisplay.css";
 
+/*
+ * Component: CodeDisplay
+ *
+ * Purpose: Fetches the active 2FA code from the authenticator backend, shows
+ *          the remaining validity time, and handles authenticator logout.
+ */
 function CodeDisplay() {
   const [code, setCode] = useState("------");
   const [expiresIn, setExpiresIn] = useState(15);
@@ -13,6 +26,11 @@ function CodeDisplay() {
   const BACKEND_URL = process.env.REACT_APP_AUTHENTICATOR_BACKEND_URL;
 
   const fetchCurrentCode = async () => {
+    /*
+     * Purpose: Loads the latest authenticator code using the saved
+     *          authenticator token and redirects to login when the token is
+     *          missing or expired.
+     */
     const token = localStorage.getItem("authenticatorToken");
 
     if (!token) {
@@ -65,6 +83,10 @@ function CodeDisplay() {
   };
 
   useEffect(() => {
+    /*
+     * Purpose: Fetches the code immediately and refreshes it every second so
+     *          the countdown remains accurate.
+     */
     fetchCurrentCode();
 
     const interval = setInterval(() => {
@@ -75,6 +97,10 @@ function CodeDisplay() {
   }, []);
 
   const handleLogout = async () => {
+    /*
+     * Purpose: Calls the authenticator logout endpoint when possible, clears
+     *          local authenticator session data, and returns to login.
+     */
     const token = localStorage.getItem("authenticatorToken");
 
     try {

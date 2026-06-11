@@ -1,7 +1,20 @@
+/*
+ * Program: AuthenticatorRegister.jsx
+ *
+ * Purpose: Displays the Secure Authenticator setup page. It links an existing
+ *          main CheckMate account to a separate authenticator password or PIN.
+ */
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/AuthenticatorRegister.css";
 
+/*
+ * Component: AuthenticatorRegister
+ *
+ * Purpose: Collects authenticator setup details, creates the authenticator
+ *          account, and moves the user to the code display screen.
+ */
 function AuthenticatorRegister() {
   const [email, setEmail] = useState("");
   const [authenticatorPassword, setAuthenticatorPassword] = useState("");
@@ -14,6 +27,10 @@ function AuthenticatorRegister() {
   const BACKEND_URL = process.env.REACT_APP_AUTHENTICATOR_BACKEND_URL;
 
   useEffect(() => {
+    /*
+     * Purpose: Reads the email passed from the main registration flow so the
+     *          authenticator form can be prefilled.
+     */
     const params = new URLSearchParams(window.location.search);
     const emailFromUrl = params.get("email");
 
@@ -23,6 +40,10 @@ function AuthenticatorRegister() {
   }, []);
 
   const handleRegister = async () => {
+    /*
+     * Purpose: Validates setup fields and sends the authenticator password to
+     *          the backend for the existing main application user.
+     */
     if (
       email === "" ||
       authenticatorPassword === "" ||

@@ -1,3 +1,11 @@
+"""
+Program: database.py
+
+Purpose: Creates the SQLite schema for the main CheckMate application. The
+         schema stores users, keygen accounts, temporary 2FA codes, and
+         authentication logs used by the frontend and backend routes.
+"""
+
 import sqlite3
 import os
 
@@ -5,6 +13,16 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "2fa_app.db")
 
 def create_database():
+    """
+    Purpose: Creates all required SQLite tables if they do not already exist.
+
+    Post-condition:
+        The database file contains users, keygen_accounts, active_codes, and
+        auth_logs tables with the expected relationships.
+
+    Returns:
+        None.
+    """
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 

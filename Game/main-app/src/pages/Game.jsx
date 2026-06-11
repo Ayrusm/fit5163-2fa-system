@@ -1,9 +1,22 @@
+/*
+ * Program: Game.jsx
+ *
+ * Purpose: Displays the authenticated chess game page. The component uses
+ *          chess.js for game rules and react-chessboard for board interaction.
+ */
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import '../styles/Game.css';
 
+/*
+ * Component: Game
+ *
+ * Purpose: Manages the local chess game state, move history, board actions,
+ *          and logout flow for authenticated users.
+ */
 function Game() {
   const navigate = useNavigate();
   
@@ -11,6 +24,10 @@ function Game() {
   const [status, setStatus] = useState('White to move');
 
   const updateStatus = (currentGame) => {
+    /*
+     * Purpose: Reads the chess engine state and updates the user-facing game
+     *          status message after each board action.
+     */
     if (currentGame.isCheckmate()) {
       setStatus(
         currentGame.turn() === 'w'
@@ -43,6 +60,10 @@ function Game() {
   };
 
   const makeMove = (sourceSquare, targetSquare) => {
+  /*
+   * Purpose: Attempts to apply a dragged chess move and updates the board only
+   *          when chess.js accepts the move as legal.
+   */
   const gameCopy = new Chess(game.fen());
 
   try {
@@ -66,6 +87,9 @@ function Game() {
 };
 
   const resetGame = () => {
+    /*
+     * Purpose: Starts a new chess game and resets the displayed status.
+     */
     const newGame = new Chess();
 
     setGame(newGame);
@@ -73,6 +97,9 @@ function Game() {
   };
 
   const undoMove = () => {
+    /*
+     * Purpose: Reverts the latest move in the current chess game.
+     */
     const gameCopy = new Chess(game.fen());
 
     gameCopy.undo();
@@ -82,6 +109,10 @@ function Game() {
   };
 
   const handleLogout = async () => {
+  /*
+   * Purpose: Notifies the backend when possible and then clears the local
+   *          browser session before returning to login.
+   */
   const token = localStorage.getItem('token');
   const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 

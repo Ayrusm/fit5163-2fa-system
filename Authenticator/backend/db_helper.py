@@ -1,3 +1,11 @@
+"""
+Program: db_helper.py
+
+Purpose: Provides database helper functions for the authenticator backend.
+         These helpers find active keygen users and save the latest hashed
+         verification code to the main CheckMate database.
+"""
+
 import sqlite3
 import os
 from datetime import datetime, timedelta
@@ -6,11 +14,24 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 DB_PATH = os.path.join(BASE_DIR, "Game", "2fa_app.db")
 
 def get_connection():
+    """
+    Purpose: Opens a SQLite connection with foreign key checks enabled.
+
+    Returns:
+        A SQLite connection to the shared CheckMate database.
+    """
     conn = sqlite3.connect(DB_PATH)
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 def get_active_users():
+    """
+    Purpose: Retrieves users whose main account and keygen account are both
+             active.
+
+    Returns:
+        A list of user and keygen account tuples needed to generate codes.
+    """
     # Returns all users who have an active keygen account
     conn = get_connection()
     cursor = conn.cursor()
@@ -25,6 +46,17 @@ def get_active_users():
     return users
 
 def save_code(keygen_account_id, code_hash):
+    """
+    Purpose: Replaces the current active code for a keygen account with a new
+             hashed code and updates the generation timestamp.
+
+    Parameters:
+        keygen_account_id -- The keygen account that owns the code.
+        code_hash -- The SHA-256 hash of the generated raw code.
+
+    Returns:
+        None.
+    """
     # Deletes the old code for this user and inserts the new one
     now = datetime.utcnow()
     valid_until = now + timedelta(seconds=15)

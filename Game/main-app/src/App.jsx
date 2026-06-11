@@ -1,3 +1,11 @@
+/*
+ * Program: App.jsx
+ *
+ * Purpose: Defines the route structure for the main CheckMate React
+ *          application. Public routes handle registration, login, and 2FA
+ *          verification, while protected routes require a stored session token.
+ */
+
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import Register from './pages/Register';
@@ -8,6 +16,12 @@ import Admin from './pages/Admin';
 
 import ProtectedRoute from './components/ProtectedRoute';
 
+/*
+ * Component: App
+ *
+ * Purpose: Connects URL paths to the correct page components and wraps
+ *          authenticated pages in the route guard.
+ */
 function App() {
   return (
     <BrowserRouter>

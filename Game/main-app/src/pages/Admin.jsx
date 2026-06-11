@@ -1,7 +1,21 @@
+/*
+ * Program: Admin.jsx
+ *
+ * Purpose: Displays the CheckMate administration dashboard. Administrators can
+ *          view users, keygen accounts, authentication logs, and enable or
+ *          disable user accounts.
+ */
+
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/Admin.css';
 
+/*
+ * Component: Admin
+ *
+ * Purpose: Loads dashboard data from the backend, renders system tables and
+ *          summary counts, and manages admin logout/status actions.
+ */
 function Admin() {
   const [users, setUsers] = useState([]);
   const [keygenAccounts, setKeygenAccounts] = useState([]);
@@ -15,6 +29,10 @@ function Admin() {
   const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
   const fetchAdminData = async () => {
+    /*
+     * Purpose: Retrieves users, keygen accounts, and authentication logs in
+     *          parallel so the dashboard shows a consistent system snapshot.
+     */
     setLoading(true);
     setError('');
 
@@ -29,6 +47,7 @@ function Admin() {
         headers.Authorization = `Bearer ${token}`;
       }
 
+      // These independent admin endpoints can be loaded at the same time.
       const [usersResponse, keygenResponse, logsResponse] = await Promise.all([
         fetch(`${BACKEND_URL}/admin/users`, {
           method: 'GET',
@@ -72,10 +91,17 @@ function Admin() {
   };
 
   useEffect(() => {
+    /*
+     * Purpose: Loads dashboard data once when the admin page first opens.
+     */
     fetchAdminData();
   }, []);
 
   const handleToggleUserStatus = async (userId, currentStatus) => {
+    /*
+     * Purpose: Switches a user between active and disabled states, then
+     *          refreshes the dashboard tables and log entries.
+     */
     const newStatus = currentStatus === 1 ? 0 : 1;
 
     try {
@@ -115,6 +141,10 @@ function Admin() {
   };
 
   const handleLogout = async () => {
+    /*
+     * Purpose: Ends the admin browser session locally after attempting to call
+     *          the backend logout endpoint.
+     */
     const token = localStorage.getItem('token');
 
     try {
@@ -138,6 +168,7 @@ function Admin() {
   const activeKeygenCount = keygenAccounts.filter((account) => account.is_active === 1).length;
   const failedAuthCount = authLogs.filter((log) => log.success === 0).length;
 
+  // Show a simple loading state until the first admin data request finishes.
   if (loading) {
     return (
       <div className="admin-page">
