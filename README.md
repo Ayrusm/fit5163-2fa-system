@@ -158,11 +158,11 @@ Start them in this order.
 Open a terminal and run:
 
 ```bash
-cd fit5163-2fa-system/Game
-python3 -m venv venv
+cd path/to/fit5163-2fa-system/Game
+python3.11 -m venv venv
 source venv/bin/activate
-pip install -r backend/requirements.txt
-python3 backend/app.py
+python3.11 -m pip install -r backend/requirements.txt
+python3.11 backend/app.py
 ```
 
 The Game backend should run on:
