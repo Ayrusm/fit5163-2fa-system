@@ -15,6 +15,7 @@ import Game from './pages/Game';
 import Admin from './pages/Admin';
 
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 
 /*
  * Component: App
@@ -48,9 +49,9 @@ function App() {
         <Route
           path="/admin"
           element={
-            <ProtectedRoute>
+            <AdminRoute>
               <Admin />
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
       </Routes>
